@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐵 Monkey Jungle Run</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            overflow: hidden;
+            background: #87ce73;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2d5016;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Start Screen */
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #87ce73, #5ea847);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #startScreen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite;
+        }
+        
+        #startScreen p {
+            font-size: 24px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        #startScreen .highscore {
+            margin-bottom: 30px;
+            font-size: 18px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        
+        .game-btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #5ea847;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s, background 0.2s;
+        }
+        
+        .game-btn:hover {
+            transform: scale(1.1);
+            background: #4d8f38;
+        }
+        
+        .game-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Game Over Screen */
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+        }
+        
+        #gameOverScreen h1 {
+            font-size: 60px;
+            color: #ff6b6b;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+        }
+        
+        #gameOverScreen .stats {
+            background: rgba(255,255,255,0.1);
+            padding: 30px 50px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        #gameOverScreen .stat-line {
+            margin: 15px 0;
+        }
+        
+        /* Pause Screen */
+        #pauseScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+        }
+        
+        #pauseScreen h1 {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        
+        #pauseScreen p {
+            font-size: 22px;
+            opacity: 0.8;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            #hud {
+                font-size: 16px;
+                gap: 15px;
+                padding: 10px 15px;
+            }
+            
+            #startScreen h1 {
+                font-size: 36px;
+            }
+            
+            #startScreen p {
+                font-size: 18px;
+            }
+            
+            .game-btn {
+                font-size: 20px;
+                padding: 12px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-item">
+            <span id="hearts">❤️❤️❤️</span>
+        </div>
+        <div class="hud-item">
+            <span>📏</span>
+            <span id="distance">0 m</span>
+        </div>
+        <div class="hud-item">
+            <span>🍌</span>
+            <span id="bananas">0</span>
+        </div>
+    </div>
+    
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <h1>🐵 Monkey Jungle Run 🌴</h1>
+        <p>Collect bananas and avoid obstacles!</p>
+        <div class="highscore">🏆 Best Score: <span id="bestScore">0</span> m</div>
+        <button class="game-btn" id="startBtn">Start Game</button>
+    </div>
+    
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen">
+        <h1>Game Over!</h1>
+        <div class="stats">
+            <div class="stat-line">📏 Distance: <span id="finalDistance">0</span> m</div>
+            <div class="stat-line">🍌 Bananas: <span id="finalBananas">0</span></div>
+            <div class="stat-line" style="color: #ffd700;">🏆 Best: <span id="finalBest">0</span> m</div>
+        </div>
+        <button class="game-btn" id="restartBtn">Play Again</button>
+    </div>
+    
+    <!-- Pause Screen -->
+    <div id="pauseScreen">
+        <h1>⏸️ PAUSED</h1>
+        <p>Press ESC to Resume</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ==================== GAME STATE ====================
+        const gameState = {
+            state: 'start', // 'start', 'playing', 'paused', 'gameOver'
+            lives: 3,
+            maxLives: 5,
+            bananas: 0,
+            distance: 0,
+            speed: 0.20, // Sabit hız (daha yavaş)
+            currentLane: 1, // 0=left, 1=center, 2=right
+            isJumping: false,
+            bestScore: 0
+        };
+        
+        // Load best score
+        const bestScore = 0;
+        document.getElementById('bestScore').textContent = bestScore;
+        
+        // ==================== SCENE SETUP ====================
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ce73, 10, 60);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 3, 5);
+        camera.lookAt(0, 1, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+        
+        // ==================== PLAYER MONKEY ====================
+        const monkey = new THREE.Group();
+        
+        // Body - using cylinder instead of capsule
+        const bodyGeom = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16);
+        const bodyMat = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+        const body = new THREE.Mesh(bodyGeom, bodyMat);
+        body.castShadow = true;
+        monkey.add(body);
+        
+        // Body top sphere
+        const bodyTopGeom = new THREE.SphereGeometry(0.3, 16, 16);
+        const bodyTop = new THREE.Mesh(bodyTopGeom, bodyMat);
+        bodyTop.position.y = 0.4;
+        bodyTop.scale.y = 0.7;
+        bodyTop.castShadow = true;
+        monkey.add(bodyTop);
+        
+        // Body bottom sphere
+        const bodyBottom = new THREE.Mesh(bodyTopGeom, bodyMat);
+        bodyBottom.position.y = -0.4;
+        bodyBottom.scale.y = 0.7;
+        bodyBottom.castShadow = true;
+        monkey.add(bodyBottom);
+        
+        // Head
+        const headGeom = new THREE.SphereGeometry(0.35, 16, 16);
+        const head = new THREE.Mesh(headGeom, bodyMat);
+        head.position.y = 0.9;
+        head.castShadow = true;
+        monkey.add(head);
+        
+        // Face
+        const faceGeom = new THREE.CircleGeometry(0.25, 16);
+        const faceMat = new THREE.MeshPhongMaterial({ color: 0xFFDEAD });
+        const face = new THREE.Mesh(faceGeom, faceMat);
+        face.position.set(0, 0.85, 0.3);
+        monkey.add(face);
+        
+        // Eyes
+        const eyeGeom = new THREE.SphereGeometry(0.06, 8, 8);
+        const eyeMat = new THREE.MeshPhongMaterial({ color: 0x000000 });
+        const leftEye = new THREE.Mesh(eyeGeom, eyeMat);
+        leftEye.position.set(-0.1, 0.95, 0.3);
+        monkey.add(leftEye);
+        const rightEye = leftEye.clone();
+        rightEye.position.x = 0.1;
+        monkey.add(rightEye);
+        
+        // Arms - using cylinder
+        const armGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8);
+        const leftArm = new THREE.Mesh(armGeom, bodyMat);
+        leftArm.position.set(-0.35, 0.2, 0);
+        leftArm.rotation.z = Math.PI / 6;
+        leftArm.castShadow = true;
+        monkey.add(leftArm);
+        
+        const rightArm = leftArm.clone();
+        rightArm.position.x = 0.35;
+        rightArm.rotation.z = -Math.PI / 6;
+        monkey.add(rightArm);
+        
+        // Legs - using cylinder
+        const legGeom = new THREE.CylinderGeometry(0.1, 0.08, 0.6, 8);
+        const leftLeg = new THREE.Mesh(legGeom, bodyMat);
+        leftLeg.position.set(-0.15, -0.7, 0);
+        leftLeg.castShadow = true;
+        monkey.add(leftLeg);
+        
+        const rightLeg = leftLeg.clone();
+        rightLeg.position.x = 0.15;
+        monkey.add(rightLeg);
+        
+        // Tail
+        const tailGeom = new THREE.CylinderGeometry(0.08, 0.04, 0.8, 8);
+        const tail = new THREE.Mesh(tailGeom, bodyMat);
+        tail.position.set(0, 0.1, -0.3);
+        tail.rotation.x = -Math.PI / 3;
+        tail.castShadow = true;
+        monkey.add(tail);
+        
+        monkey.position.set(0, 1, 0);
+        scene.add(monkey);
+        
+        // Animation variables
+        let animTime = 0;
+        
+        // ==================== GROUND & ENVIRONMENT ====================
+        const lanePositions = [-2, 0, 2]; // X positions for 3 lanes
+        const roadSegments = [];
+        const obstacles = [];
+        const bananas = [];
+        const trees = [];
+        
+        function createRoadSegment(z) {
+            const group = new THREE.Group();
+            
+            // Ground
+            const groundGeom = new THREE.PlaneGeometry(8, 10);
+            const groundMat = new THREE.MeshPhongMaterial({ color: 0x5ea847 });
+            const ground = new THREE.Mesh(groundGeom, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            group.add(ground);
+            
+            // Dirt road
+            const roadGeom = new THREE.PlaneGeometry(6, 10);
+            const roadMat = new THREE.MeshPhongMaterial({ color: 0x8B7355 });
+            const road = new THREE.Mesh(roadGeom, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.position.y = 0.01;
+            road.receiveShadow = true;
+            group.add(road);
+            
+            group.position.z = z;
+            scene.add(group);
+            return group;
+        }
+        
+        function createTree(x, z) {
+            const tree = new THREE.Group();
+            
+            // Trunk
+            const trunkGeom = new THREE.CylinderGeometry(0.2, 0.3, 2, 8);
+            const trunkMat = new THREE.MeshPhongMaterial({ color: 0x4a2511 });
+            const trunk = new THREE.Mesh(trunkGeom, trunkMat);
+            trunk.position.y = 1;
+            trunk.castShadow = true;
+            tree.add(trunk);
+            
+            // Leaves
+            const leavesGeom = new THREE.SphereGeometry(1, 8, 8);
+            const leavesMat = new THREE.MeshPhongMaterial({ color: 0x2d5016 });
+            const leaves = new THREE.Mesh(leavesGeom, leavesMat);
+            leaves.position.y = 2.5;
+            leaves.scale.set(1, 1.2, 1);
+            leaves.castShadow = true;
+            tree.add(leaves);
+            
+            tree.position.set(x, 0, z);
+            scene.add(tree);
+            return tree;
+        }
+        
+        // Initialize road
+        for (let i = 0; i < 10; i++) {
+            roadSegments.push(createRoadSegment(-i * 10));
+        }
+        
+        // Initialize trees
+        for (let i = 0; i < 20; i++) {
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const x = side * (5 + Math.random() * 2);
+            const z = -Math.random() * 80;
+            trees.push(createTree(x, z));
+        }
+        
+        // ==================== OBSTACLES ====================
+        function createObstacle(type, lane, z) {
+            let mesh;
+            
+            if (type === 'rock') {
+                const geom = new THREE.DodecahedronGeometry(0.5, 0);
+                const mat = new THREE.MeshPhongMaterial({ color: 0x808080 });
+                mesh = new THREE.Mesh(geom, mat);
+                mesh.scale.set(1, 0.8, 1);
+            } else {
+                // log
+                const geom = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8);
+                const mat = new THREE.MeshPhongMaterial({ color: 0x4a2511 });
+                mesh = new THREE.Mesh(geom, mat);
+                mesh.rotation.z = Math.PI / 2;
+            }
+            
+            mesh.position.set(lanePositions[lane], 0.5, z);
+            mesh.castShadow = true;
+            mesh.userData.type = 'obstacle';
+            scene.add(mesh);
+            return mesh;
+        }
+        
+        function spawnObstacle() {
+            if (obstacles.length > 0) {
+                const lastObstacle = obstacles[obstacles.length - 1];
+                // Engeller arasında daha fazla mesafe
+                if (lastObstacle.position.z > -30) return;
+            }
+            
+            const type = Math.random() > 0.5 ? 'rock' : 'log';
+            const lane = Math.floor(Math.random() * 3);
+            const z = -50 - Math.random() * 20; // Daha fazla varyasyon
+            
+            obstacles.push(createObstacle(type, lane, z));
+        }
+        
+        // ==================== BANANAS ====================
+        function createBanana(lane, z) {
+            const group = new THREE.Group();
+            
+            // Banana body
+            const bodyGeom = new THREE.CylinderGeometry(0.1, 0.15, 0.5, 8);
+            const bodyMat = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            body.rotation.z = Math.PI / 6;
+            group.add(body);
+            
+            // Stem
+            const stemGeom = new THREE.CylinderGeometry(0.03, 0.03, 0.15, 8);
+            const stemMat = new THREE.MeshPhongMaterial({ color: 0x8B7355 });
+            const stem = new THREE.Mesh(stemGeom, stemMat);
+            stem.position.y = 0.3;
+            group.add(stem);
+            
+            group.position.set(lanePositions[lane], 1, z);
+            group.userData.type = 'banana';
+            scene.add(group);
+            return group;
+        }
+        
+        function spawnBanana() {
+            if (Math.random() > 0.3) return;
+            
+            if (bananas.length > 0) {
+                const lastBanana = bananas[bananas.length - 1];
+                if (lastBanana.position.z > -15) return;
+            }
+            
+            const lane = Math.floor(Math.random() * 3);
+            const z = -40 - Math.random() * 10;
+            
+            bananas.push(createBanana(lane, z));
+        }
+        
+        // ==================== COLLISION DETECTION ====================
+        function checkCollisions() {
+            const monkeyBox = new THREE.Box3().setFromObject(monkey);
+            
+            // Check obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                if (obstacle.position.z > 2) {
+                    scene.remove(obstacle);
+                    obstacles.splice(i, 1);
+                    continue;
+                }
+                
+                if (!gameState.isJumping && Math.abs(obstacle.position.z) < 1) {
+                    const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+                    if (monkeyBox.intersectsBox(obstacleBox)) {
+                        hitObstacle();
+                        scene.remove(obstacle);
+                        obstacles.splice(i, 1);
+                    }
+                }
+            }
+            
+            // Check bananas
+            for (let i = bananas.length - 1; i >= 0; i--) {
+                const banana = bananas[i];
+                if (banana.position.z > 2) {
+                    scene.remove(banana);
+                    bananas.splice(i, 1);
+                    continue;
+                }
+                
+                if (Math.abs(banana.position.z) < 1) {
+                    const bananaBox = new THREE.Box3().setFromObject(banana);
+                    if (monkeyBox.intersectsBox(bananaBox)) {
+                        collectBanana();
+                        scene.remove(banana);
+                        bananas.splice(i, 1);
+                    }
+                }
+            }
+        }
+        
+        function hitObstacle() {
+            gameState.lives--;
+            updateHUD();
+            playSound('hit');
+            cameraShake();
+            
+            if (gameState.lives <= 0) {
+                gameOver();
+            }
+        }
+        
+        function collectBanana() {
+            gameState.bananas++;
+            
+            // Her 10 muzda 1 can ekle (maksimum 5 can)
+            if (gameState.bananas % 10 === 0 && gameState.lives < gameState.maxLives) {
+                gameState.lives++;
+            }
+            
+            updateHUD();
+            playSound('collect');
+        }
+        
+        function cameraShake() {
+            const originalX = camera.position.x;
+            const originalY = camera.position.y;
+            const originalZ = camera.position.z;
+            let shakeCount = 0;
+            const shakeInterval = setInterval(() => {
+                if (shakeCount < 8) {
+                    camera.position.x = originalX + (Math.random() - 0.5) * 0.3;
+                    camera.position.y = originalY + (Math.random() - 0.5) * 0.3;
+                    camera.position.z = originalZ + (Math.random() - 0.5) * 0.2;
+                    shakeCount++;
+                } else {
+                    camera.position.x = originalX;
+                    camera.position.y = originalY;
+                    camera.position.z = originalZ;
+                    clearInterval(shakeInterval);
+                }
+            }, 50);
+        }
+        
+        // ==================== SOUND EFFECTS ====================
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            if (type === 'collect') {
+                oscillator.frequency.value = 800;
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } else if (type === 'hit') {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.value = 100;
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            }
+        }
+        
+        // ==================== CONTROLS ====================
+        let targetLane = 1;
+        let jumpVelocity = 0;
+        const gravity = 0.015; // Daha düşük yerçekimi
+        const jumpPower = 0.30; // Daha yüksek zıplama gücü
+        
+        document.addEventListener('keydown', (e) => {
+            if (gameState.state !== 'playing' && gameState.state !== 'paused') return;
+            
+            if (e.key === 'Escape') {
+                togglePause();
+                return;
+            }
+            
+            if (gameState.state !== 'playing') return;
+            
+            if (e.key === 'ArrowLeft' && gameState.currentLane > 0) {
+                targetLane = gameState.currentLane - 1;
+            } else if (e.key === 'ArrowRight' && gameState.currentLane < 2) {
+                targetLane = gameState.currentLane + 1;
+            } else if ((e.key === 'ArrowUp' || e.key === ' ') && !gameState.isJumping) {
+                jump();
+            }
+        });
+        
+        // Touch controls
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            if (gameState.state !== 'playing') return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
+                if (deltaX > 50 && gameState.currentLane < 2) {
+                    targetLane = gameState.currentLane + 1;
+                } else if (deltaX < -50 && gameState.currentLane > 0) {
+                    targetLane = gameState.currentLane - 1;
+                }
+            } else {
+                // Vertical swipe
+                if (deltaY < -50 && !gameState.isJumping) {
+                    jump();
+                }
+            }
+        });
+        
+        function jump() {
+            gameState.isJumping = true;
+            jumpVelocity = jumpPower;
+        }
+        
+        function togglePause() {
+            if (gameState.state === 'playing') {
+                gameState.state = 'paused';
+                document.getElementById('pauseScreen').style.display = 'flex';
+            } else if (gameState.state === 'paused') {
+                gameState.state = 'playing';
+                document.getElementById('pauseScreen').style.display = 'none';
+            }
+        }
+        
+        // ==================== GAME STATE MANAGEMENT ====================
+        function startGame() {
+            gameState.state = 'playing';
+            gameState.lives = 3;
+            gameState.bananas = 0;
+            gameState.distance = 0;
+            gameState.speed = 0.20; // Sabit hız (daha yavaş)
+            gameState.currentLane = 1;
+            gameState.isJumping = false;
+            targetLane = 1;
+            jumpVelocity = 0;
+            
+            // Clear obstacles and bananas
+            obstacles.forEach(o => scene.remove(o));
+            obstacles.length = 0;
+            bananas.forEach(b => scene.remove(b));
+            bananas.length = 0;
+            
+            monkey.position.set(0, 1, 0);
+            
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            updateHUD();
+        }
+        
+        function gameOver() {
+            gameState.state = 'gameOver';
+            
+            // Update best score
+            if (gameState.distance > gameState.bestScore) {
+                gameState.bestScore = gameState.distance;
+            }
+            
+            document.getElementById('finalDistance').textContent = gameState.distance;
+            document.getElementById('finalBananas').textContent = gameState.bananas;
+            document.getElementById('finalBest').textContent = gameState.bestScore;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            
+            playSound('hit');
+        }
+        
+        function updateHUD() {
+            const hearts = '❤️'.repeat(gameState.lives) + '🖤'.repeat(gameState.maxLives - gameState.lives);
+            document.getElementById('hearts').textContent = hearts;
+            document.getElementById('distance').textContent = gameState.distance + ' m';
+            document.getElementById('bananas').textContent = gameState.bananas;
+        }
+        
+        // Button event listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        
+        // ==================== MAIN GAME LOOP ====================
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (gameState.state === 'playing') {
+                animTime += 0.1;
+                
+                // Animate monkey
+                leftArm.rotation.z = Math.PI / 6 + Math.sin(animTime) * 0.3;
+                rightArm.rotation.z = -Math.PI / 6 - Math.sin(animTime) * 0.3;
+                leftLeg.rotation.x = Math.sin(animTime) * 0.4;
+                rightLeg.rotation.x = -Math.sin(animTime) * 0.4;
+                tail.rotation.x = -Math.PI / 3 + Math.sin(animTime * 0.5) * 0.2;
+                
+                // Lane switching
+                const targetX = lanePositions[targetLane];
+                monkey.position.x += (targetX - monkey.position.x) * 0.15;
+                if (Math.abs(monkey.position.x - targetX) < 0.01) {
+                    gameState.currentLane = targetLane;
+                }
+                
+                // Camera tilt
+                camera.position.x += (monkey.position.x * 0.3 - camera.position.x) * 0.1;
+                
+                // Jumping
+                if (gameState.isJumping) {
+                    monkey.position.y += jumpVelocity;
+                    jumpVelocity -= gravity;
+                    
+                    if (monkey.position.y <= 1) {
+                        monkey.position.y = 1;
+                        jumpVelocity = 0;
+                        gameState.isJumping = false;
+                    }
+                }
+                
+                // Move world
+                roadSegments.forEach(segment => {
+                    segment.position.z += gameState.speed;
+                    if (segment.position.z > 10) {
+                        segment.position.z -= 100;
+                    }
+                });
+                
+                obstacles.forEach(obstacle => {
+                    obstacle.position.z += gameState.speed;
+                });
+                
+                bananas.forEach(banana => {
+                    banana.position.z += gameState.speed;
+                    banana.rotation.y += 0.05;
+                });
+                
+                trees.forEach(tree => {
+                    tree.position.z += gameState.speed;
+                    if (tree.position.z > 10) {
+                        tree.position.z -= 100;
+                    }
+                });
+                
+                // Spawn
+                if (Math.random() < 0.02) spawnObstacle();
+                if (Math.random() < 0.03) spawnBanana();
+                
+                // Update distance (daha yavaş artış)
+                gameState.distance += Math.floor(gameState.speed * 3);
+                if (gameState.distance % 10 === 0) updateHUD();
+                
+                checkCollisions();
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // ==================== RESIZE HANDLER ====================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>
